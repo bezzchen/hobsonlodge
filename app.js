@@ -5,6 +5,26 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Middleware to redirect HTTP to HTTPS
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && 
+      !req.secure && 
+      req.get('x-forwarded-proto') !== 'https') {
+    const secureUrl = 'https://' + req.headers.host + req.url;
+    return res.redirect(301, secureUrl);
+  }
+  next();
+});
+
+// Add security headers
+app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'client')));
 
